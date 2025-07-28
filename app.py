@@ -28,7 +28,8 @@ columns = st.columns(3)
 clicked = None
 for i in range(n):
     angle = 2 * math.pi * i / n
-    col_index = int((math.sin(angle) + 1) * 1.5)
+    raw_index = int((math.sin(angle) + 1) * 1.5)
+    col_index = max(0, min(raw_index, 2))  # sécurité pour rester entre 0 et 2
     with columns[col_index]:
         if st.button(activities[i]["name"], key=f"activity_{i}"):
             clicked = activities[i]
