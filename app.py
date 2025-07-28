@@ -1,102 +1,82 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import numpy as np
 
-# Interface pour éditer les tâches
 st.set_page_config(layout="wide")
-st.title("🎲 Vincent's Interactive Monopoly Board")
+st.title("🔵 Vincent's Activity Sphere")
 
-st.subheader("✍️ Modifier, ajouter ou supprimer une activité")
-
-if "tiles" not in st.session_state:
-    st.session_state.tiles = [
-        {"name": "Home", "color": "lightgray"},
-        {"name": "Joseph Prince Translation", "color": "skyblue", "urgent": True},
-        {"name": "Vox Dubbing Studio", "color": "skyblue"},
-        {"name": "TTL Admin & Taxes", "color": "red", "urgent": True},
-        {"name": "Podcast Léon", "color": "skyblue"},
-        {"name": "MC & Event Hosting", "color": "lightgreen"},
-        {"name": "Agriculture Project", "color": "lightyellow"},
-        {"name": "MyFamilyGrocer Advertising", "color": "orange"},
-        {"name": "Green Gears Invoice", "color": "red", "urgent": True},
-        {"name": "IBL DodoTrail Invoice", "color": "red", "urgent": True},
-        {"name": "CentrePoint Ad", "color": "orange"},
-        {"name": "Galaxy Event Planning", "color": "lightgreen"},
-        {"name": "Airbnb Planning", "color": "pink"},
-        {"name": "Weekend with Kids", "color": "lightblue"},
-        {"name": "Jesuis Project", "color": "violet"},
-        {"name": "Spiritual Growth", "color": "violet"},
+# Initialiser les activités principales si besoin
+if "activities" not in st.session_state:
+    st.session_state.activities = [
+        {"name": "Joseph Prince", "color": "#87CEEB", "aspects": ["Traduction", "Alignement biblique", "Delivery voix"]},
+        {"name": "Vox Dubbing", "color": "#00BFFF", "aspects": ["Formation comédiens", "Direction artistique", "Qualité livrables"]},
+        {"name": "TTL & Taxes", "color": "#FF6666", "aspects": ["Factures", "Déclarations", "Suivi MRA"]},
+        {"name": "Podcast Léon", "color": "#FFA500", "aspects": ["Voix", "Montage", "Effets sonores"]},
+        {"name": "Animation / MC", "color": "#90EE90", "aspects": ["Planning", "Prépa fiche", "Évènement à venir"]},
+        {"name": "Projet Agricole", "color": "#DAA520", "aspects": ["Plantation", "Subventions", "Entretien"]},
+        {"name": "Vie spirituelle", "color": "#BA55D3", "aspects": ["Temps personnel", "Journaux", "Prières"]},
+        {"name": "Temps famille", "color": "#ADD8E6", "aspects": ["Savannah & Hugo", "Week-ends", "Aventures"]},
     ]
 
-tiles = st.session_state.tiles
+activities = st.session_state.activities
 
-# Réordonner les activités
-st.subheader("📦 Réorganiser les activités")
-order = st.selectbox("Choisir une activité à déplacer", [tile["name"] for tile in tiles])
-move_dir = st.radio("Déplacer :", ["Vers le haut", "Vers le bas"], horizontal=True)
-if st.button("Appliquer le déplacement"):
-    idx = next((i for i, t in enumerate(tiles) if t["name"] == order), None)
-    if idx is not None:
-        if move_dir == "Vers le haut" and idx > 0:
-            tiles[idx], tiles[idx-1] = tiles[idx-1], tiles[idx]
-        elif move_dir == "Vers le bas" and idx < len(tiles) - 1:
-            tiles[idx], tiles[idx+1] = tiles[idx+1], tiles[idx]
-
-# Formulaire d'ajout ou de mise à jour
-with st.form("edit_form"):
-    new_name = st.text_input("Nom de l'activité")
-    new_color = st.color_picker("Couleur de la case", value="#87CEEB")
-    new_urgent = st.checkbox("Est-ce urgent ?")
-    submit = st.form_submit_button("Ajouter / Mettre à jour")
-
-if submit and new_name:
-    found = False
-    for tile in tiles:
-        if tile["name"] == new_name:
-            tile["color"] = new_color
-            tile["urgent"] = new_urgent
-            found = True
-            break
-    if not found:
-        tiles.append({"name": new_name, "color": new_color, "urgent": new_urgent})
-    st.success(f"Activité '{new_name}' ajoutée ou mise à jour.")
-
-# Suppression d'activité
-st.subheader("🗑️ Supprimer une activité")
-to_delete = st.selectbox("Choisir une activité à supprimer", [tile["name"] for tile in tiles])
-if st.button("Supprimer"):
-    tiles[:] = [tile for tile in tiles if tile["name"] != to_delete]
-    st.success(f"Activité '{to_delete}' supprimée.")
-
-# Sélection d'une case
-selected_tile = st.selectbox("Choisissez une activité pour voir les conseils", [tile["name"] for tile in tiles])
-
-urgent_tiles = [tile["name"] for tile in tiles if tile.get("urgent")]
-
-if selected_tile:
-    st.subheader(f"📌 Activité : {selected_tile}")
-    if selected_tile in urgent_tiles:
-        st.error("🚨 Cette tâche est URGENTE. Traitez-la dès que possible.")
-    else:
-        st.info("📅 Cette tâche peut être planifiée selon vos disponibilités.")
-
-# Affichage du plateau
-fig, ax = plt.subplots(figsize=(10, 10))
-ax.set_xlim(0, 10)
-ax.set_ylim(0, 10)
+# Affichage en cercle
+st.subheader("🌐 Vue sphérique des domaines d’activité")
+fig, ax = plt.subplots(figsize=(8, 8))
+ax.set_xlim(-1.2, 1.2)
+ax.set_ylim(-1.2, 1.2)
 ax.set_aspect('equal')
 ax.axis('off')
 
-positions = [(x, 0) for x in range(10)] + [(9, y) for y in range(1, 10)] + [(x, 9) for x in range(8, -1, -1)] + [(0, y) for y in range(8, 0, -1)]
+n = len(activities)
+radius = 1
+angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
 
-for i, (x, y) in enumerate(positions[:len(tiles)]):
-    tile = tiles[i]
-    rect = patches.Rectangle((x, y), 1, 1, linewidth=1, edgecolor='black', facecolor=tile["color"])
-    ax.add_patch(rect)
-    ax.text(x + 0.5, y + 0.5, tile["name"], ha='center', va='center', fontsize=6, wrap=True)
-    if tile.get("urgent"):
-        ax.text(x + 0.5, y + 0.2, "URGENT", ha='center', va='center', fontsize=8, color='red', fontweight='bold')
+positions = [(radius * np.cos(a), radius * np.sin(a)) for a in angles]
+for i, (x, y) in enumerate(positions):
+    activity = activities[i]
+    ax.add_patch(plt.Circle((x, y), 0.2, color=activity["color"], ec='black'))
+    ax.text(x, y, activity["name"], ha='center', va='center', fontsize=8, wrap=True)
+
+# Centre
+ax.add_patch(plt.Circle((0, 0), 0.25, color='gray', ec='black'))
+ax.text(0, 0, "Moi", ha='center', va='center', fontsize=10, fontweight='bold')
 
 st.pyplot(fig)
 
-st.caption("Cliquez sur une activité en haut pour voir les priorités et conseils. Vous pouvez aussi ajouter, modifier, réordonner ou supprimer des cases.")
+# Interaction
+st.subheader("🔍 Explorer un domaine")
+selected = st.selectbox("Choisissez un domaine", [a["name"] for a in activities])
+
+for a in activities:
+    if a["name"] == selected:
+        st.markdown(f"### 🧩 Détails de **{a['name']}**")
+        for aspect in a["aspects"]:
+            st.markdown(f"- {aspect}")
+
+# Ajouter / modifier des domaines et aspects
+st.subheader("➕ Ajouter ou modifier un domaine")
+with st.form("add_activity"):
+    name = st.text_input("Nom du domaine")
+    color = st.color_picker("Couleur")
+    aspects = st.text_area("Liste des aspects (1 par ligne)")
+    submitted = st.form_submit_button("Ajouter / Mettre à jour")
+
+if submitted and name:
+    existing = next((a for a in activities if a["name"] == name), None)
+    aspect_list = [a.strip() for a in aspects.splitlines() if a.strip()]
+    if existing:
+        existing["color"] = color
+        existing["aspects"] = aspect_list
+        st.success(f"Domaine {name} mis à jour.")
+    else:
+        activities.append({"name": name, "color": color, "aspects": aspect_list})
+        st.success(f"Domaine {name} ajouté.")
+
+# Supprimer un domaine
+st.subheader("🗑️ Supprimer un domaine")
+to_delete = st.selectbox("Choisir un domaine à supprimer", [a["name"] for a in activities])
+if st.button("Supprimer ce domaine"):
+    st.session_state.activities = [a for a in activities if a["name"] != to_delete]
+    st.success(f"Domaine {to_delete} supprimé.")
